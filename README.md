@@ -19,8 +19,14 @@ J0 is a 4-wheeled robot
 - Added Wi-Fi control.
 - Implemented simple cli client to control the robot.
 - Added webrepl to update code wirelessly.
+- Added wireless logging from the robot.
+- Added simple HTML client to control the robot.
 
 > With wifi controls and webrepl no need to physically connect to the robot. Both code and control are done wirelessly now :)
+
+![Mark 1](docs/M1.gif)
+
+[See full video](docs/M1.mp4)
 
 ### Wi-Fi control
 
@@ -31,9 +37,10 @@ Left and right use a slower inner side, so they make moving turns.
 
 The 750 ms watchdog stops both sides if a moving command is no longer
 refreshed. `boot.py` connects to Wi-Fi and starts WebREPL before `main.py`
-starts the HTTP server with the motors stopped. `/forward`, `/backward`, `/left`, `/right`,
-`/spin_left`, and `/spin_right` each move for one second. `/demo` runs all six
-in that order, with a half-second stop between moves. `/stop` interrupts any
+starts the HTTP server with the motors stopped. `/forward`, `/backward`, `/left`,
+and `/right` each move for one second. `/spin_left` and `/spin_right` each move
+for two seconds, driving the two sides in opposite directions. `/demo` runs all
+six in that order, with a half-second stop between moves. `/stop` interrupts any
 maneuver. `/reset` stops the motors and restarts the ESP32-S3. A network loss
 also stops the motors. Turns and spins are open-loop, so their actual angle
 depends on the floor and battery charge.
@@ -71,10 +78,48 @@ while uploading, since WebREPL supports one connection at a time.
 make deploy
 ```
 
-For keyboard control, run `python client.py` in a terminal after setting
-`ROBOT_HOST` and `ROBOT_TOKEN` as above. Use the arrow keys to move, Space to
-stop, and Q to quit. Each arrow press starts a one-second move; quitting sends
-a stop command. You can also pass `--host` and `--token` directly.
+For browser control, run `python client.py` on your Mac after setting
+`ROBOT_HOST` and `ROBOT_TOKEN` as above. It prints the full URL to open on a
+phone connected to the same Wi-Fi. On the Mac, open `http://localhost:8000/`.
+Tap the movement, spin, demo, or stop buttons. Each movement tap lasts one second;
+spins last two seconds. The page listens on `0.0.0.0` so your phone can reach
+it. Anyone on the same network who can open the page can control the robot while
+the client is running. You can also pass `--host`, `--token`, and `--port` directly.
+
+For terminal control, run `python cli.py` (or `make cli`) with the same
+`ROBOT_HOST` and `ROBOT_TOKEN`. Use the arrow keys to move, Space to stop, and Q
+to quit. Each arrow press starts a one-second move; quitting sends a stop
+command. The web and terminal clients can run together. The robot follows the
+most recent command from either client, and Stop interrupts either one.
+
+### Remote logs
+
+Set `LOG_HOST` in `wifi_config.py` to your Mac's IP address on the robot's
+Wi-Fi network. `LOG_PORT` defaults to `9999`; set it in the same file if you
+need another port. Run `make deploy-usb` after changing `wifi_config.py`,
+because wireless `make deploy` does not upload the private config. On the Mac,
+start the receiver before running commands:
+
+```sh
+make logs
+```
+
+Use `make logs LOG_PORT=10000` if you changed the port on the robot. The
+receiver shows the arrival time, robot IP, severity, component, and message.
+Boot, server, motion transitions, watchdog stops, and network errors are
+logged to the serial/WebREPL console and sent as best-effort UDP packets.
+Messages may be lost if Wi-Fi is down or the receiver is not running. If
+`LOG_HOST` is missing or `None`, logging stays on the console only.
+
+Other modules can use the same logger:
+
+```python
+from src.logger import get_logger
+
+log = get_logger("battery")
+log.info("voltage", 7.4)
+log.warning("battery low")
+```
 
 Keep the robot on a trusted local network: these commands use plain HTTP.
 `make test` runs the local logic checks. A fully hung controller still needs

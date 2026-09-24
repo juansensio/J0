@@ -69,8 +69,8 @@ class DriveBaseTest(unittest.TestCase):
             ("reverse", "reverse", "reverse", "equal"),
             ("left", "forward", "forward", "left_slower"),
             ("right", "forward", "forward", "right_slower"),
-            ("spin_left", "reverse", "forward", "equal"),
-            ("spin_right", "forward", "reverse", "equal"),
+            ("spin_left", "forward", "reverse", "equal"),
+            ("spin_right", "reverse", "forward", "equal"),
         )
         for command, left_dir, right_dir, speeds in cases:
             getattr(self.drive, command)()

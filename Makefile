@@ -80,3 +80,14 @@ gif:
 
 test:
 	env -u VIRTUAL_ENV uv run python -m pytest tests/
+
+client:
+	uv run client.py
+
+cli:
+	uv run cli.py
+
+LOG_PORT ?= 9999
+
+logs:
+	python3 scripts/logs.py --port $(LOG_PORT)

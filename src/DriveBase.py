@@ -3,6 +3,10 @@
 import micropython
 import time
 from machine import Timer
+from src.logger import get_logger
+
+
+log = get_logger("DriveBase")
 
 
 class DriveBase:
@@ -49,27 +53,30 @@ class DriveBase:
         for motor in self.left_motors + self.right_motors:
             motor.stop()
 
-    def forward(self, speed=0.75):
+    def forward(self, speed=1.0):
         self.set(speed, speed)
 
-    def reverse(self, speed=0.75):
+    def reverse(self, speed=1.0):
         self.set(-speed, -speed)
 
-    def left(self, speed=0.75):
+    def left(self, speed=1.0):
         self.set(speed * 0.35, speed)
 
-    def right(self, speed=0.75):
+    def right(self, speed=1.0):
         self.set(speed, speed * 0.35)
 
-    def spin_left(self, speed=0.75):
-        self.set(-speed, speed)
-
-    def spin_right(self, speed=0.75):
+    def spin_left(self, speed=1.0):
         self.set(speed, -speed)
+
+    def spin_right(self, speed=1.0):
+        self.set(-speed, speed)
 
     def _check_timeout(self, _timer):
         if self._active and not self._timeout_queued:
-            if time.ticks_diff(time.ticks_ms(), self._last_command_ms) >= self.timeout_ms:
+            if (
+                time.ticks_diff(time.ticks_ms(), self._last_command_ms)
+                >= self.timeout_ms
+            ):
                 self._timeout_queued = True
                 try:
                     micropython.schedule(self._scheduled_timeout, 0)
@@ -79,10 +86,14 @@ class DriveBase:
 
     def _stop_if_expired(self, _arg):
         self._timeout_queued = False
-        if self._active and time.ticks_diff(time.ticks_ms(), self._last_command_ms) >= self.timeout_ms:
+        if (
+            self._active
+            and time.ticks_diff(time.ticks_ms(), self._last_command_ms)
+            >= self.timeout_ms
+        ):
             self.stop()
             self.timed_out = True
-            print("DriveBase watchdog timeout: stopped")
+            log.warning("watchdog timeout: stopped")
 
     def close(self):
         self.stop()

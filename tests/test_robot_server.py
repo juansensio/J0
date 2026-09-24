@@ -110,24 +110,40 @@ class RobotServerTest(unittest.TestCase):
         self.server._tick()
         self.assertEqual(self.drive.commands[-1], "stop")
 
-    def test_each_turn_and_spin_command_stops_after_one_second(self):
+    def test_turns_stop_after_one_second_and_spins_after_two(self):
         for path, command in (("/left", "left"), ("/right", "right"),
                               ("/spin_left", "spin_left"),
                               ("/spin_right", "spin_right")):
-            self.assertIn(b"200 OK", self.request(path))
+            duration = 2000 if "spin" in path else 1000
+            response = self.request(path)
+            self.assertIn(b"200 OK", response)
+            unit = "second" if duration == 1000 else "seconds"
+            self.assertIn(("%d %s" % (duration // 1000, unit)).encode(), response)
             self.assertEqual(self.drive.commands[-1], command)
-            self.now += 1000
+            self.now += duration - 1
+            self.server._tick()
+            self.assertEqual(self.drive.commands[-1], command)
+            self.now += 1
             self.server._tick()
             self.assertEqual(self.drive.commands[-1], "stop")
+
+    def test_watchdog_refresh_does_not_repeat_step_log(self):
+        with patch("src.RobotServer.log.info") as info:
+            self.request("/spin_right")
+            self.now = 100
+            self.server._tick()
+            self.now = 200
+            self.server._tick()
+            info.assert_called_once_with("step", "spin_right")
 
     def test_demo_runs_all_directions_with_stops_between(self):
         self.request("/demo")
         observed = [self.drive.commands[-1]]
         for index in range(1, 11):
-            self.now += 1000 if index % 2 else 500
+            self.now += (2000 if index == 9 else 1000) if index % 2 else 500
             self.server._tick()
             observed.append(self.drive.commands[-1])
-        self.now += 1000
+        self.now += 2000
         self.server._tick()
         observed.append(self.drive.commands[-1])
         self.assertEqual(observed, ["forward", "stop", "reverse", "stop",

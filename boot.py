@@ -19,22 +19,27 @@ print("Boot complete; LED and buzzer off")
 
 # Bring up the recovery channel before main.py starts the robot application.
 # webrepl_setup creates webrepl_cfg.py on the board with the password.
-from wifi_config import WIFI_SSID, WIFI_PASSWORD
+import wifi_config
+from src.logger import configure, get_logger
+
+configure(getattr(wifi_config, "LOG_HOST", None),
+          getattr(wifi_config, "LOG_PORT", 9999))
+log = get_logger("boot")
 
 wlan = network.WLAN(network.WLAN.IF_STA)
 wlan.active(True)
 if not wlan.isconnected():
-    wlan.connect(WIFI_SSID, WIFI_PASSWORD)
+    wlan.connect(wifi_config.WIFI_SSID, wifi_config.WIFI_PASSWORD)
     started = time.ticks_ms()
     while not wlan.isconnected() and time.ticks_diff(time.ticks_ms(), started) < 15000:
         time.sleep_ms(100)
 if wlan.isconnected():
-    print("Robot IP:", wlan.ifconfig()[0])
+    log.info("Robot IP:", wlan.ifconfig()[0])
 else:
-    print("Wi-Fi unavailable at boot; main.py will retry")
+    log.warning("Wi-Fi unavailable at boot; main.py will retry")
 
 try:
     import webrepl
     webrepl.start()
 except (ImportError, OSError) as exc:
-    print("WebREPL unavailable:", exc)
+    log.warning("WebREPL unavailable:", exc)
