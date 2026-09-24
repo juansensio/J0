@@ -9,7 +9,7 @@ MOTOR_PINS = (
     ("front left", 41, 42),
 )
 
-DUTY = 65535 // 2
+DUTY = 65535  # Match the working motor diagnostic during startup.
 
 
 motors = [(name, Motor(in1, in2)) for name, in1, in2 in MOTOR_PINS]
@@ -30,14 +30,18 @@ def reverse():
         motor.reverse(DUTY)
 
 
-print("Stopping")
-stop()
-time.sleep(1)
-print("Forwarding")
-forward()
-time.sleep(1)
-print("Reversing")
-reverse()
-time.sleep(1)
-print("Stopping")
-stop()
+try:
+    print("Stopping")
+    stop()
+    time.sleep(1)
+    print("Forwarding")
+    forward()
+    time.sleep(1)
+    stop()
+    time.sleep(0.25)
+    print("Reversing")
+    reverse()
+    time.sleep(1)
+finally:
+    print("Stopping")
+    stop()
