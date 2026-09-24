@@ -2,42 +2,32 @@ import time
 
 from src.Motor import Motor
 
-RLW_IN1 = 21
-RLW_IN2 = 47
-FLW_IN1 = 48
-FLW_IN2 = 45
-RRW_IN1 = 41
-RRW_IN2 = 42
-FRW_IN1 = 2
-FRW_IN2 = 1
+MOTOR_PINS = (
+    ("front right", 48, 45),
+    ("rear left", 2, 1),
+    ("rear right", 21, 47),
+    ("front left", 41, 42),
+)
 
-FLM = Motor(FLW_IN1, FLW_IN2)
-FRM = Motor(FRW_IN1, FRW_IN2)
-RLM = Motor(RLW_IN1, RLW_IN2)
-RRM = Motor(RRW_IN1, RRW_IN2)
+DUTY = 65535 // 2
 
-duty = 32768  # 50% of the 16-bit PWM range
+
+motors = [(name, Motor(in1, in2)) for name, in1, in2 in MOTOR_PINS]
 
 
 def stop():
-    FLM.stop()
-    RLM.stop()
-    FRM.stop()
-    RRM.stop()
+    for _, motor in motors:
+        motor.stop()
 
 
 def forward():
-    FLM.forward(duty)
-    RLM.forward(duty)
-    FRM.forward(duty)
-    RRM.forward(duty)
+    for _, motor in motors:
+        motor.forward(DUTY)
 
 
 def reverse():
-    FLM.reverse(duty)
-    RLM.reverse(duty)
-    FRM.reverse(duty)
-    RRM.reverse(duty)
+    for _, motor in motors:
+        motor.reverse(DUTY)
 
 
 print("Stopping")
