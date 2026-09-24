@@ -77,4 +77,3 @@ And Gazebo will expose essentially the same interfaces:
              Nav2
 ```
 
-That gives us a very clean milestone: first make the virtual J0 map and navigate, then switch sim.launch.py → real.launch.py and progressively make the physical machine reproduce the same behavior.
