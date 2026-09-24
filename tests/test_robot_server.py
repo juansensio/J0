@@ -19,6 +19,18 @@ class FakeDrive:
     def reverse(self):
         self.commands.append("reverse")
 
+    def left(self):
+        self.commands.append("left")
+
+    def right(self):
+        self.commands.append("right")
+
+    def spin_left(self):
+        self.commands.append("spin_left")
+
+    def spin_right(self):
+        self.commands.append("spin_right")
+
 
 class FakeConnection:
     def __init__(self, request):
@@ -40,7 +52,8 @@ class RobotServerTest(unittest.TestCase):
     def setUp(self):
         self.now = 0
         clock = patch.multiple(time, ticks_ms=lambda: self.now,
-                               ticks_diff=lambda a, b: a - b, create=True)
+                               ticks_diff=lambda a, b: a - b,
+                               sleep_ms=lambda _: None, create=True)
         clock.start()
         self.addCleanup(clock.stop)
         machine = types.ModuleType("machine")
@@ -96,6 +109,31 @@ class RobotServerTest(unittest.TestCase):
         self.now = 1000
         self.server._tick()
         self.assertEqual(self.drive.commands[-1], "stop")
+
+    def test_each_turn_and_spin_command_stops_after_one_second(self):
+        for path, command in (("/left", "left"), ("/right", "right"),
+                              ("/spin_left", "spin_left"),
+                              ("/spin_right", "spin_right")):
+            self.assertIn(b"200 OK", self.request(path))
+            self.assertEqual(self.drive.commands[-1], command)
+            self.now += 1000
+            self.server._tick()
+            self.assertEqual(self.drive.commands[-1], "stop")
+
+    def test_demo_runs_all_directions_with_stops_between(self):
+        self.request("/demo")
+        observed = [self.drive.commands[-1]]
+        for index in range(1, 11):
+            self.now += 1000 if index % 2 else 500
+            self.server._tick()
+            observed.append(self.drive.commands[-1])
+        self.now += 1000
+        self.server._tick()
+        observed.append(self.drive.commands[-1])
+        self.assertEqual(observed, ["forward", "stop", "reverse", "stop",
+                                    "left", "stop", "right", "stop",
+                                    "spin_left", "stop", "spin_right", "stop"])
+        self.assertFalse(self.server.steps)
 
     def test_reset_stops_before_reset(self):
         machine = sys.modules["machine"]

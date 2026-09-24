@@ -3,3 +3,4 @@ __pycache__/
 *.MOV
 wifi_config.py
 .env
+tools/webrepl/.git/

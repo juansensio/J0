@@ -11,6 +11,16 @@ class RobotServer:
     TICK_MS = 50
     MOVE_MS = 1000
     DEMO_PAUSE_MS = 500
+    COMMANDS = {
+        b"/forward": "forward",
+        b"/backward": "reverse",
+        b"/left": "left",
+        b"/right": "right",
+        b"/spin_left": "spin_left",
+        b"/spin_right": "spin_right",
+    }
+    DEMO_COMMANDS = ("forward", "reverse", "left", "right",
+                     "spin_left", "spin_right")
 
     def __init__(self, drive, ssid, password, token):
         if not ssid or not token:
@@ -121,21 +131,23 @@ class RobotServer:
         if path == b"/stop":
             self._stop()
             return self._reply(conn, 200, "Stopped")
-        if path == b"/forward":
-            self._start((("forward", self.MOVE_MS),))
-            return self._reply(conn, 200, "Forward for 1 second")
-        if path == b"/backward":
-            self._start((("reverse", self.MOVE_MS),))
-            return self._reply(conn, 200, "Backward for 1 second")
+        if path in self.COMMANDS:
+            self._start(((self.COMMANDS[path], self.MOVE_MS),))
+            return self._reply(conn, 200, "Motion started for 1 second")
         if path == b"/demo":
-            self._start((("forward", self.MOVE_MS),
-                         ("stop", self.DEMO_PAUSE_MS),
-                         ("reverse", self.MOVE_MS)))
+            steps = []
+            for name in self.DEMO_COMMANDS:
+                if steps:
+                    steps.append(("stop", self.DEMO_PAUSE_MS))
+                steps.append((name, self.MOVE_MS))
+            self._start(steps)
             return self._reply(conn, 200, "Demo started")
         if path == b"/reset":
             self._stop()
             self._reply(conn, 200, "Resetting")
             conn.close()
+            # Give the TCP response time to leave before restarting Wi-Fi.
+            time.sleep_ms(100)
             machine.reset()
             return
         return self._reply(conn, 404, "Unknown command")

@@ -13,6 +13,15 @@ J0 is a 4-wheeled robot
 
 [See full video](docs/M0.mp4)
 
+## Mark 1
+
+- Added more maneuver commands: turn left and right, and spin in place.
+- Added Wi-Fi control.
+- Implemented simple cli client to control the robot.
+- Added webrepl to update code wirelessly.
+
+> With wifi controls and webrepl no need to physically connect to the robot. Both code and control are done wirelessly now :)
+
 ### Wi-Fi control
 
 `src/DriveBase.py` groups the two left and two right motors. `set(left, right)`
@@ -21,21 +30,26 @@ forward direction. `forward`, `reverse`, `left`, `right`, and `stop` are shortcu
 Left and right use a slower inner side, so they make moving turns.
 
 The 750 ms watchdog stops both sides if a moving command is no longer
-refreshed. At boot, `main.py` leaves the motors stopped, connects to Wi-Fi,
-and waits for HTTP commands. `/forward` and `/backward` move for one second;
-`/demo` moves forward for one second, pauses for half a second, then reverses
-for one second. `/stop` interrupts any maneuver. `/reset` stops the motors and
-restarts the ESP32-S3. A network loss also stops the motors.
+refreshed. `boot.py` connects to Wi-Fi and starts WebREPL before `main.py`
+starts the HTTP server with the motors stopped. `/forward`, `/backward`, `/left`, `/right`,
+`/spin_left`, and `/spin_right` each move for one second. `/demo` runs all six
+in that order, with a half-second stop between moves. `/stop` interrupts any
+maneuver. `/reset` stops the motors and restarts the ESP32-S3. A network loss
+also stops the motors. Turns and spins are open-loop, so their actual angle
+depends on the floor and battery charge.
 
 1. Copy `wifi_config.example.py` to `wifi_config.py` and fill in the Wi-Fi
    credentials and a long, random `CONTROL_TOKEN`. The private config is
    ignored by Git.
 2. Secure the robot with its wheels clear of the ground, connect the ESP32-S3
-   by USB, and run `make deploy`. This installs the code and restarts the board.
+   by USB, and run `make deploy-usb` once. This installs `boot.py`, the private
+   Wi-Fi config, and the application. Run `import webrepl_setup` from the serial
+   REPL to enable WebREPL and set its password if you have not already done so.
 3. Read the `Robot IP:` address from the serial output (`make repl`). On the
    Mac, set `ROBOT_HOST` to that address and `ROBOT_TOKEN` to the configured
    token. Then run `make status`, `make demo`, `make forward`,
-   `make backward`, `make stop`, or `make reset`. Example:
+   `make backward`, `make left`, `make right`, `make spin_left`,
+   `make spin_right`, `make stop`, or `make reset`. Example:
 
    ```sh
    ROBOT_HOST=192.168.1.123 ROBOT_TOKEN=your-token make demo
@@ -43,6 +57,24 @@ restarts the ESP32-S3. A network loss also stops the motors.
 
    The equivalent direct request is
    `curl -H "X-Robot-Token: your-token" http://192.168.1.123/demo`.
+
+For later wireless updates, put `WEBREPL_PASSWORD`, `ROBOT_HOST`, and
+`ROBOT_TOKEN` in `.env` (ignored by Git), then run `make deploy`. This uploads
+every `src/*.py` file and `main.py` over WebREPL
+on port 8266, then calls the authenticated HTTP `/reset` endpoint. `src/`
+must already exist on the board from the first USB deployment. Keep WebREPL
+configured on the board; its password lives in `webrepl_cfg.py`, which the
+wireless deploy does not replace. Leave the browser WebREPL client disconnected
+while uploading, since WebREPL supports one connection at a time.
+
+```sh
+make deploy
+```
+
+For keyboard control, run `python client.py` in a terminal after setting
+`ROBOT_HOST` and `ROBOT_TOKEN` as above. Use the arrow keys to move, Space to
+stop, and Q to quit. Each arrow press starts a one-second move; quitting sends
+a stop command. You can also pass `--host` and `--token` directly.
 
 Keep the robot on a trusted local network: these commands use plain HTTP.
 `make test` runs the local logic checks. A fully hung controller still needs
