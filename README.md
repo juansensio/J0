@@ -10,7 +10,7 @@ J0 is a 4-wheeled robot
 - Robot can move forward and backward, turn left and right, and spin in place.
 
 ![Mark 0](docs/M0.gif)
-![See full video](docs/M0.mp4)
+[See full video](docs/M0.mp4)
 
 ## Goal
 
