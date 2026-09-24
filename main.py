@@ -1,47 +1,37 @@
+"""Start J0's Wi-Fi command server. Motors stay stopped until commanded."""
+
 import time
 
+from src.DriveBase import DriveBase
 from src.Motor import Motor
-
-MOTOR_PINS = (
-    ("front right", 48, 45),
-    ("rear left", 2, 1),
-    ("rear right", 21, 47),
-    ("front left", 41, 42),
-)
-
-DUTY = int(0.75 * 65535)  # Match the working motor diagnostic during startup.
+from src.RobotServer import RobotServer
+from wifi_config import WIFI_SSID, WIFI_PASSWORD, CONTROL_TOKEN
 
 
-motors = [(name, Motor(in1, in2)) for name, in1, in2 in MOTOR_PINS]
-
-
-def stop():
-    for _, motor in motors:
-        motor.stop()
-
-
-def forward():
-    for _, motor in motors:
-        motor.forward(DUTY)
-
-
-def reverse():
-    for _, motor in motors:
-        motor.reverse(DUTY)
+LEFT_PINS = ((2, 1), (41, 42))       # rear left, front left
+RIGHT_PINS = ((48, 45), (21, 47))   # front right, rear right
+motors = []
+drive = None
+server = None
 
 
 try:
-    print("Stopping")
-    stop()
-    time.sleep(1)
-    print("Forwarding")
-    forward()
-    time.sleep(1)
-    stop()
-    time.sleep(0.25)
-    print("Reversing")
-    reverse()
-    time.sleep(1)
+    for pins in LEFT_PINS + RIGHT_PINS:
+        motors.append(Motor(*pins))
+    drive = DriveBase(motors[:2], motors[2:])
+    server = RobotServer(drive, WIFI_SSID, WIFI_PASSWORD, CONTROL_TOKEN)
+    while True:
+        try:
+            server.run()
+        except OSError as exc:
+            print("Network error:", exc)
+            drive.stop()
+            time.sleep(2)
 finally:
-    print("Stopping")
-    stop()
+    if server is not None:
+        server.close()
+    if drive is not None:
+        drive.close()
+    else:
+        for motor in motors:
+            motor.stop()

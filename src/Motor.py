@@ -11,8 +11,8 @@ class Motor:
         self.in2.duty_u16(0)
 
     def forward(self, duty: int):
-        self.in1.duty_u16(duty)
         self.in2.duty_u16(0)
+        self.in1.duty_u16(duty)
 
     def reverse(self, duty: int):
         self.in1.duty_u16(0)
