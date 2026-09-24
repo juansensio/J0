@@ -1,14 +1,3 @@
-from machine import Pin
-from utime import sleep
+# from src.motor import run_motor_test
 
-pin = Pin("LED", Pin.OUT)
-
-print("LED starts flashing...")
-while True:
-    try:
-        pin.toggle()
-        sleep(1)  # sleep 1sec
-    except KeyboardInterrupt:
-        break
-pin.off()
-print("Finished.")
+# run_motor_test()
