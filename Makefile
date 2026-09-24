@@ -45,3 +45,6 @@ rm:
 
 %.py:
 	@:
+
+gif:
+	bash scripts/prepare-video.sh $(or $(word 2,$(MAKECMDGOALS)),*.MOV)

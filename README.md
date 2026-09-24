@@ -1,3 +1,19 @@
+# J0
+
+J0 is a 4-wheeled robot
+
+## Mark 0
+
+- The Mark 0 prototype is a 4-wheeled robot with a single motor per wheel.
+- Two DRV8833 motor drivers are used to control the motors.
+- The ESP32-S3 is used to control the motors and read the encoders.
+- Robot can move forward and backward, turn left and right, and spin in place.
+
+![Mark 0](docs/M0.gif)
+![See full video](docs/M0.mp4)
+
+## Goal
+
 The resulting physical architecture is exactly what I want to simulate:
 
 ```
